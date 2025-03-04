@@ -53,6 +53,10 @@ func getAnimeSearch(malToTvdb map[int]int, r *http.Request) (string, error) {
 		limit = 9999 // limit not specified or invalid
 	}
 
+	// for some reason Jikan responds with 400 Bad Request for any limit >25
+	// so instead, we just limit when mapping the data and remove the limit from the Jikan request
+	q.Del("limit")
+
 	hasNextPage := true
 	page := 0
 	resp := []ResponseItem{}
