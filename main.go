@@ -68,6 +68,10 @@ func getAnimeSearch(malToTvdb map[int]int, r *http.Request) (string, error) {
 
 		// map the data
 		for _, item := range result.Data {
+			if malToTvdb[item.MalId] == 0 {
+				log.Printf("MyAnimeList ID %d (%s a.k.a. %s) has no associated TVDB ID, skipping...\n", item.MalId, item.Title, item.TitleEnglish)
+				continue
+			}
 			count++
 			if count > limit {
 				break
