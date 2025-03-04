@@ -88,7 +88,7 @@ func getAnimeSearch(malToTvdb map[int]int, r *http.Request) (string, error) {
 			break
 		}
 		if hasNextPage {
-			time.Sleep(1 * time.Second) // sleep between requests for new page to try and avoid rate limits
+			time.Sleep(500 * time.Millisecond) // sleep between requests for new page to try and avoid rate limits
 		}
 	}
 
