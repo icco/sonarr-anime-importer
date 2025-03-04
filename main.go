@@ -48,9 +48,15 @@ func handleAnimeSearch(malToTvdb map[int]int) func(w http.ResponseWriter, r *htt
 func getAnimeSearch(malToTvdb map[int]int, r *http.Request) (string, error) {
 	q := r.URL.Query()
 
+	limit, err := strconv.Atoi(q.Get("limit"))
+	if err != nil {
+		limit = 9999 // limit not specified or invalid
+	}
+
 	hasNextPage := true
 	page := 0
 	resp := []ResponseItem{}
+	count := 0
 	for hasNextPage {
 		page++
 		q.Set("page", strconv.Itoa(page))
@@ -62,6 +68,10 @@ func getAnimeSearch(malToTvdb map[int]int, r *http.Request) (string, error) {
 
 		// map the data
 		for _, item := range result.Data {
+			count++
+			if count > limit {
+				break
+			}
 			resp = append(resp,
 				ResponseItem{
 					item.Title,
@@ -70,6 +80,9 @@ func getAnimeSearch(malToTvdb map[int]int, r *http.Request) (string, error) {
 				})
 		}
 		hasNextPage = result.Pagination.HasNextPage
+		if count > limit {
+			break
+		}
 		if hasNextPage {
 			time.Sleep(1 * time.Second) // sleep between requests for new page to try and avoid rate limits
 		}
