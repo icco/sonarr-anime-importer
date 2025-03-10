@@ -37,6 +37,7 @@ func (m *ConcurrentMap) Get(i int) int {
 var lastBuiltAnimeIdList time.Time
 
 func main() {
+	log.Println("sonarr-mal-importer v0.0.5")
 	log.Println("Building Anime ID Associations...")
 	var malToTvdb = new(ConcurrentMap)
 	buildIdMap(malToTvdb)
