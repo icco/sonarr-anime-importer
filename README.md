@@ -8,3 +8,21 @@ Pulls MyAnimeList and TVDB ID associations from https://raw.githubusercontent.co
 ## Supported Requests
 ### GET /anime
 See https://docs.api.jikan.moe/#tag/anime/operation/getAnimeSearch for parameters.
+
+Example request:
+```bash
+# fetches the top 10 most popular currently airing tv anime
+curl "http://localhost:3333/anime?type=tv&status=airing&order_by=popularity&sort=asc&limit=10"
+```
+
+## Docker Compose
+```yaml
+services:
+  sonarr-mal-importer:
+    image: gabehf/sonarr-mal-importer:latest
+    container_name: sonarr-mal-importer
+    ports:
+      - 3333:3333
+    restart: unless-stopped
+
+```
