@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/darenliang/jikan-go"
@@ -22,20 +23,35 @@ type AnimeEntry struct {
 	TvdbId int         `json:"tvdb_id"`
 	MalId  interface{} `json:"mal_id"`
 }
-type IdList struct {
+type ConcurrentMap struct {
+	m   map[int]int
+	mut sync.RWMutex
 }
+
+func (m *ConcurrentMap) Get(i int) int {
+	m.mut.RLock()
+	defer m.mut.RUnlock()
+	return m.m[i]
+}
+
+var lastBuiltAnimeIdList time.Time
 
 func main() {
 	log.Println("Building Anime ID Associations...")
-	malToTvdb := buildIdMap()
+	var malToTvdb = new(ConcurrentMap)
+	buildIdMap(malToTvdb)
 	http.HandleFunc("/anime", handleAnimeSearch(malToTvdb))
 	log.Println("Listening on :3333")
 	log.Fatal(http.ListenAndServe(":3333", nil))
 }
 
-func handleAnimeSearch(malToTvdb map[int]int) func(w http.ResponseWriter, r *http.Request) {
+func handleAnimeSearch(malToTvdb *ConcurrentMap) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s?%s", r.Method, r.URL.Path, r.URL.RawQuery)
+		if time.Since(lastBuiltAnimeIdList) > 24*time.Hour {
+			log.Println("Anime ID association table expired, building new table...")
+			buildIdMap(malToTvdb)
+		}
 		search, err := getAnimeSearch(malToTvdb, r)
 		if err != nil {
 			w.WriteHeader(500)
@@ -45,7 +61,7 @@ func handleAnimeSearch(malToTvdb map[int]int) func(w http.ResponseWriter, r *htt
 	}
 }
 
-func getAnimeSearch(malToTvdb map[int]int, r *http.Request) (string, error) {
+func getAnimeSearch(malToTvdb *ConcurrentMap, r *http.Request) (string, error) {
 	q := r.URL.Query()
 
 	limit, err := strconv.Atoi(q.Get("limit"))
@@ -72,7 +88,7 @@ func getAnimeSearch(malToTvdb map[int]int, r *http.Request) (string, error) {
 
 		// map the data
 		for _, item := range result.Data {
-			if malToTvdb[item.MalId] == 0 {
+			if malToTvdb.Get(item.MalId) == 0 {
 				log.Printf("MyAnimeList ID %d (%s a.k.a. %s) has no associated TVDB ID, skipping...\n", item.MalId, item.Title, item.TitleEnglish)
 				continue
 			}
@@ -84,7 +100,7 @@ func getAnimeSearch(malToTvdb map[int]int, r *http.Request) (string, error) {
 				ResponseItem{
 					item.Title,
 					item.MalId,
-					malToTvdb[item.MalId],
+					malToTvdb.Get(item.MalId),
 				})
 		}
 		hasNextPage = result.Pagination.HasNextPage
@@ -104,8 +120,10 @@ func getAnimeSearch(malToTvdb map[int]int, r *http.Request) (string, error) {
 	return string(respJson), nil
 }
 
-func buildIdMap() map[int]int {
-	// build the mal -> tvdb association table
+func buildIdMap(idMap *ConcurrentMap) {
+	// build/re-build the mal -> tvdb association table
+	idMap.mut.Lock()
+	defer idMap.mut.Unlock()
 	var idListBytes []byte
 	resp, err := http.Get("https://raw.githubusercontent.com/Kometa-Team/Anime-IDs/master/anime_ids.json")
 	if err != nil {
@@ -121,7 +139,7 @@ func buildIdMap() map[int]int {
 	if err != nil {
 		log.Fatal("Error unmarshalling anime_ids.json: ", err)
 	}
-	malToTvdb := make(map[int]int, 0)
+	idMap.m = make(map[int]int, 0)
 	for _, entry := range animeMap {
 		if entry.MalId == nil {
 			continue
@@ -141,8 +159,8 @@ func buildIdMap() map[int]int {
 			malIdList = append(malIdList, int(entry.MalId.(float64)))
 		}
 		for _, val := range malIdList {
-			malToTvdb[val] = entry.TvdbId
+			idMap.m[val] = entry.TvdbId
 		}
 	}
-	return malToTvdb
+	lastBuiltAnimeIdList = time.Now()
 }
