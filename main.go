@@ -44,24 +44,24 @@ func main() {
 	log.Println("Building Anime ID Associations...")
 	var malToTvdb = new(ConcurrentMap)
 	buildIdMap(malToTvdb)
-	permaSkipStr := os.Getenv("ALWAYS_SKIP_IDS")
-	permaSkipIds := strings.Split(permaSkipStr, ",")
-	if permaSkipStr != "" {
-		log.Printf("Always skipping: %v\n", permaSkipIds)
+	permaSkipMalStr := os.Getenv("ALWAYS_SKIP_MAL_IDS")
+	permaSkipMalIds := strings.Split(permaSkipMalStr, ",")
+	if permaSkipMalStr != "" {
+		log.Printf("Always skipping: %v\n", permaSkipMalIds)
 	}
-	http.HandleFunc("/anime", handleAnimeSearch(malToTvdb, permaSkipIds))
+	http.HandleFunc("/anime", handleAnimeSearch(malToTvdb, permaSkipMalIds))
 	log.Println("Listening on :3333")
 	log.Fatal(http.ListenAndServe(":3333", nil))
 }
 
-func handleAnimeSearch(malToTvdb *ConcurrentMap, permaSkipIds []string) func(w http.ResponseWriter, r *http.Request) {
+func handleAnimeSearch(malToTvdb *ConcurrentMap, permaSkipMalIds []string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s?%s", r.Method, r.URL.Path, r.URL.RawQuery)
 		if time.Since(lastBuiltAnimeIdList) > 24*time.Hour {
 			log.Println("Anime ID association table expired, building new table...")
 			buildIdMap(malToTvdb)
 		}
-		search, err := getAnimeSearch(malToTvdb, permaSkipIds, r)
+		search, err := getAnimeSearch(malToTvdb, permaSkipMalIds, r)
 		if err != nil {
 			w.WriteHeader(500)
 		} else {
@@ -70,7 +70,7 @@ func handleAnimeSearch(malToTvdb *ConcurrentMap, permaSkipIds []string) func(w h
 	}
 }
 
-func getAnimeSearch(malToTvdb *ConcurrentMap, permaSkipIds []string, r *http.Request) (string, error) {
+func getAnimeSearch(malToTvdb *ConcurrentMap, permaSkipMalIds []string, r *http.Request) (string, error) {
 	q := r.URL.Query()
 
 	limit, err := strconv.Atoi(q.Get("limit"))
@@ -108,7 +108,7 @@ func getAnimeSearch(malToTvdb *ConcurrentMap, permaSkipIds []string, r *http.Req
 				log.Printf("MyAnimeList ID %d (%s a.k.a. %s) is a duplicate, skipping...\n", item.MalId, item.Title, item.TitleEnglish)
 				continue
 			}
-			if slices.Contains(permaSkipIds, strconv.Itoa(item.MalId)) {
+			if slices.Contains(permaSkipMalIds, strconv.Itoa(item.MalId)) {
 				log.Printf("MyAnimeList ID %d (%s a.k.a. %s) is set to always skip, skipping...\n", item.MalId, item.Title, item.TitleEnglish)
 				continue
 			}

@@ -20,7 +20,7 @@ curl "http://localhost:3333/anime?type=tv&status=airing&order_by=popularity&sort
 
 ## Environment
 One configuration environment variable is supported:
-- `ALWAYS_SKIP_IDS`: Comma-separated list of MyAnimeList IDs to always skip. These do not count towards the return limit.
+- `ALWAYS_SKIP_MAL_IDS`: Comma-separated list of MyAnimeList IDs to always skip. These do not count towards the return limit.
 
 ## Docker Compose
 ```yaml
@@ -31,7 +31,7 @@ services:
     ports:
       - 3333:3333
     environment:
-      - ALWAYS_SKIP_IDS=12345,67890 # Comma-separated
+      - ALWAYS_SKIP_MAL_IDS=12345,67890 # Comma-separated
     restart: unless-stopped
 
 ```
