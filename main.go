@@ -5,7 +5,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,23 +40,28 @@ func (m *ConcurrentMap) Get(i int) int {
 var lastBuiltAnimeIdList time.Time
 
 func main() {
-	log.Println("sonarr-mal-importer v0.0.5")
+	log.Println("sonarr-mal-importer v0.1.0")
 	log.Println("Building Anime ID Associations...")
 	var malToTvdb = new(ConcurrentMap)
 	buildIdMap(malToTvdb)
-	http.HandleFunc("/anime", handleAnimeSearch(malToTvdb))
+	permaSkipStr := os.Getenv("ALWAYS_SKIP_IDS")
+	permaSkipIds := strings.Split(permaSkipStr, ",")
+	if permaSkipStr != "" {
+		log.Printf("Always skipping: %v\n", permaSkipIds)
+	}
+	http.HandleFunc("/anime", handleAnimeSearch(malToTvdb, permaSkipIds))
 	log.Println("Listening on :3333")
 	log.Fatal(http.ListenAndServe(":3333", nil))
 }
 
-func handleAnimeSearch(malToTvdb *ConcurrentMap) func(w http.ResponseWriter, r *http.Request) {
+func handleAnimeSearch(malToTvdb *ConcurrentMap, permaSkipIds []string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s?%s", r.Method, r.URL.Path, r.URL.RawQuery)
 		if time.Since(lastBuiltAnimeIdList) > 24*time.Hour {
 			log.Println("Anime ID association table expired, building new table...")
 			buildIdMap(malToTvdb)
 		}
-		search, err := getAnimeSearch(malToTvdb, r)
+		search, err := getAnimeSearch(malToTvdb, permaSkipIds, r)
 		if err != nil {
 			w.WriteHeader(500)
 		} else {
@@ -62,13 +70,15 @@ func handleAnimeSearch(malToTvdb *ConcurrentMap) func(w http.ResponseWriter, r *
 	}
 }
 
-func getAnimeSearch(malToTvdb *ConcurrentMap, r *http.Request) (string, error) {
+func getAnimeSearch(malToTvdb *ConcurrentMap, permaSkipIds []string, r *http.Request) (string, error) {
 	q := r.URL.Query()
 
 	limit, err := strconv.Atoi(q.Get("limit"))
 	if err != nil {
 		limit = 9999 // limit not specified or invalid
 	}
+
+	skipDedup := parseBoolParam(q, "allow_duplicates")
 
 	// for some reason Jikan responds with 400 Bad Request for any limit >25
 	// so instead, we just limit when mapping the data and remove the limit from the Jikan request
@@ -78,6 +88,7 @@ func getAnimeSearch(malToTvdb *ConcurrentMap, r *http.Request) (string, error) {
 	page := 0
 	resp := []ResponseItem{}
 	count := 0
+	usedIds := make(map[int]bool, 0)
 	for hasNextPage {
 		page++
 		q.Set("page", strconv.Itoa(page))
@@ -93,6 +104,14 @@ func getAnimeSearch(malToTvdb *ConcurrentMap, r *http.Request) (string, error) {
 				log.Printf("MyAnimeList ID %d (%s a.k.a. %s) has no associated TVDB ID, skipping...\n", item.MalId, item.Title, item.TitleEnglish)
 				continue
 			}
+			if usedIds[item.MalId] && !skipDedup {
+				log.Printf("MyAnimeList ID %d (%s a.k.a. %s) is a duplicate, skipping...\n", item.MalId, item.Title, item.TitleEnglish)
+				continue
+			}
+			if slices.Contains(permaSkipIds, strconv.Itoa(item.MalId)) {
+				log.Printf("MyAnimeList ID %d (%s a.k.a. %s) is set to always skip, skipping...\n", item.MalId, item.Title, item.TitleEnglish)
+				continue
+			}
 			count++
 			if count > limit {
 				break
@@ -103,6 +122,7 @@ func getAnimeSearch(malToTvdb *ConcurrentMap, r *http.Request) (string, error) {
 					item.MalId,
 					malToTvdb.Get(item.MalId),
 				})
+			usedIds[item.MalId] = true
 		}
 		hasNextPage = result.Pagination.HasNextPage
 		if count > limit {
@@ -164,4 +184,19 @@ func buildIdMap(idMap *ConcurrentMap) {
 		}
 	}
 	lastBuiltAnimeIdList = time.Now()
+}
+
+// parses the boolean param "name" from url.Values "values"
+func parseBoolParam(values url.Values, name string) bool {
+	param := values.Get(name)
+
+	if param != "" {
+		val, err := strconv.ParseBool(param)
+		if err == nil {
+			return val
+		}
+	} else if _, exists := values[name]; exists {
+		return true
+	}
+	return false
 }

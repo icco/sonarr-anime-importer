@@ -9,11 +9,18 @@ Pulls MyAnimeList and TVDB ID associations from https://raw.githubusercontent.co
 ### GET /anime
 See https://docs.api.jikan.moe/#tag/anime/operation/getAnimeSearch for parameters.
 
+Additional parameters supported:
+- `allow_duplicates`: skips de-duplication of results
+
 Example request:
 ```bash
 # fetches the top 10 most popular currently airing tv anime
 curl "http://localhost:3333/anime?type=tv&status=airing&order_by=popularity&sort=asc&limit=10"
 ```
+
+## Environment
+One configuration environment variable is supported:
+- `ALWAYS_SKIP_IDS`: Comma-separated list of MyAnimeList IDs to always skip. These do not count towards the return limit.
 
 ## Docker Compose
 ```yaml
@@ -23,6 +30,21 @@ services:
     container_name: sonarr-mal-importer
     ports:
       - 3333:3333
+    environment:
+      - ALWAYS_SKIP_IDS=12345,67890 # Comma-separated
     restart: unless-stopped
 
 ```
+
+# TODO
+- [x] Add de-duplication and a query param to disable it
+- [x] Add perma-skip by MALId option in environment variable
+- [ ] Only do "a.k.a." when logging if the anime has different romanized and english titles
+
+# Albums that fueled development
+| Album                   | Artist                       |
+|-------------------------|------------------------------|
+| ZOO!!                   | Necry Talkie (ネクライトーキー) |
+| FREAK                   | Necry Talkie (ネクライトーキー) |
+| Expert In A Dying Field | The Beths                    |
+| Vivid                   | ADOY                         |
