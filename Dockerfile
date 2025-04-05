@@ -4,5 +4,5 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY *.go ./
-RUN CGO_ENABLED=0 GOOS=linux go build -o /sonarr-mal-importer
-CMD ["/sonarr-mal-importer"]
+RUN CGO_ENABLED=0 GOOS=linux go build -o /sonarr-anime-importer
+CMD ["/sonarr-anime-importer"]

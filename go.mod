@@ -1,4 +1,4 @@
-module github.com/gabehf/sonarr-mal-importer
+module github.com/gabehf/sonarr-anime-importer
 
 go 1.23.0
 
