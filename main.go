@@ -17,13 +17,13 @@ type ResponseItem struct {
 	Title     string `json:"title"`
 	TitleEng  string `json:"titleEnglish,omitempty"`
 	MalId     int    `json:"malId,omitempty"`
-	AnilistId int    `json:"anilistId,omitempty"`
+	AniListId int    `json:"anilistId,omitempty"`
 	TvdbId    int    `json:"tvdbId"`
 }
 type AnimeEntry struct {
 	TvdbId    int         `json:"tvdb_id"`
 	MalId     interface{} `json:"mal_id"`
-	AnilistId int         `json:"anilist_id"`
+	AniListId int         `json:"anilist_id"`
 }
 type ConcurrentMap struct {
 	mal map[int]int
@@ -48,14 +48,14 @@ func main() {
 	if permaSkipMalStr != "" {
 		log.Printf("Always skipping MAL IDs: %v\n", permaSkipMalIds)
 	}
-	permaSkipAnilistStr := os.Getenv("ALWAYS_SKIP_ANILIST_IDS")
-	permaSkipAnilistIds := strings.Split(permaSkipAnilistStr, ",")
-	if permaSkipAnilistStr != "" {
-		log.Printf("Always skipping Anilist IDs: %v\n", permaSkipAnilistIds)
+	permaSkipAniListStr := os.Getenv("ALWAYS_SKIP_ANILIST_IDS")
+	permaSkipAniListIds := strings.Split(permaSkipAniListStr, ",")
+	if permaSkipAniListStr != "" {
+		log.Printf("Always skipping AniList IDs: %v\n", permaSkipAniListIds)
 	}
 	buildIdMapMiddleware := newRebuildStaleIdMapMiddleware(idMap)
 	http.HandleFunc("/v1/mal/anime", loggerMiddleware(buildIdMapMiddleware(handleMalAnimeSearch(idMap, permaSkipMalIds))))
-	http.HandleFunc("/v1/anilist/anime", loggerMiddleware(buildIdMapMiddleware(handleAnilistAnimeSearch(idMap, permaSkipAnilistIds))))
+	http.HandleFunc("/v1/anilist/anime", loggerMiddleware(buildIdMapMiddleware(handleAniListAnimeSearch(idMap, permaSkipAniListIds))))
 	log.Println("Listening on :3333")
 	log.Fatal(http.ListenAndServe(":3333", nil))
 }
@@ -102,7 +102,7 @@ func buildIdMap(idMap *ConcurrentMap) {
 		for _, val := range malIdList {
 			idMap.mal[val] = entry.TvdbId
 		}
-		if entry.AnilistId == 0 {
+		if entry.AniListId == 0 {
 			continue
 		}
 	}

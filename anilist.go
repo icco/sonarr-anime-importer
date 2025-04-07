@@ -74,32 +74,32 @@ query (
 }
 `
 
-type AnilistPageInfo struct {
+type AniListPageInfo struct {
 	HasNextPage bool `json:"hasNextPage"`
 }
-type AnilistMediaItem struct {
+type AniListMediaItem struct {
 	Id    int          `json:"id"`
 	IdMal int          `json:"idMal"`
-	Title AnilistTitle `json:"title"`
+	Title AniListTitle `json:"title"`
 }
-type AnilistTitle struct {
+type AniListTitle struct {
 	Romaji  string `json:"romaji"`
 	English string `json:"english"`
 }
-type AnilistResponsePage struct {
-	PageInfo AnilistPageInfo    `json:"pageInfo"`
-	Media    []AnilistMediaItem `json:"media"`
+type AniListResponsePage struct {
+	PageInfo AniListPageInfo    `json:"pageInfo"`
+	Media    []AniListMediaItem `json:"media"`
 }
-type AnilistResponseData struct {
-	Page AnilistResponsePage `json:"Page"`
+type AniListResponseData struct {
+	Page AniListResponsePage `json:"Page"`
 }
-type AnilistApiResponse struct {
-	Data AnilistResponseData `json:"data"`
+type AniListApiResponse struct {
+	Data AniListResponseData `json:"data"`
 }
 
-func handleAnilistAnimeSearch(idMap *ConcurrentMap, permaSkipIds []string) http.HandlerFunc {
+func handleAniListAnimeSearch(idMap *ConcurrentMap, permaSkipIds []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		search, err := getAnilistAnimeSearch(idMap, permaSkipIds, r)
+		search, err := getAniListAnimeSearch(idMap, permaSkipIds, r)
 		if err != nil {
 			w.WriteHeader(500)
 			w.Write([]byte(err.Error()))
@@ -109,7 +109,7 @@ func handleAnilistAnimeSearch(idMap *ConcurrentMap, permaSkipIds []string) http.
 	}
 }
 
-func getAnilistAnimeSearch(idMap *ConcurrentMap, permaSkipAnilistIds []string, r *http.Request) ([]byte, error) {
+func getAniListAnimeSearch(idMap *ConcurrentMap, permaSkipAniListIds []string, r *http.Request) ([]byte, error) {
 	q := r.URL.Query()
 
 	// set default params
@@ -119,7 +119,7 @@ func getAnilistAnimeSearch(idMap *ConcurrentMap, permaSkipAnilistIds []string, r
 	}
 	q.Set("type", "ANIME")
 
-	// dont include limit in the Anilist api call as its already hard coded at 20 per page
+	// dont include limit in the AniList api call as its already hard coded at 20 per page
 	q.Del("limit")
 
 	skipDedup := parseBoolParam(q, "allowDuplicates")
@@ -132,24 +132,24 @@ func getAnilistAnimeSearch(idMap *ConcurrentMap, permaSkipAnilistIds []string, r
 	for hasNextPage {
 		page++
 		q.Set("page", strconv.Itoa(page))
-		result, err := makeAnilistApiCall(q)
+		result, err := makeAniListApiCall(q)
 		if err != nil {
-			log.Println("Error sending request to Anilist: ", err)
+			log.Println("Error sending request to AniList: ", err)
 			return nil, err
 		}
 
 		// map the data
 		for _, item := range result.Data.Page.Media {
 			if idMap.GetByMalId(item.IdMal) == 0 {
-				log.Printf("Anilist ID %d (%s) has no associated TVDB ID, skipping...\n", item.Id, FullAnimeTitle(item.Title.Romaji, item.Title.English))
+				log.Printf("AniList ID %d (%s) has no associated TVDB ID, skipping...\n", item.Id, FullAnimeTitle(item.Title.Romaji, item.Title.English))
 				continue
 			}
 			if usedIds[item.Id] && !skipDedup {
-				log.Printf("Anilist ID %d (%s) is a duplicate, skipping...\n", item.Id, FullAnimeTitle(item.Title.Romaji, item.Title.English))
+				log.Printf("AniList ID %d (%s) is a duplicate, skipping...\n", item.Id, FullAnimeTitle(item.Title.Romaji, item.Title.English))
 				continue
 			}
-			if slices.Contains(permaSkipAnilistIds, strconv.Itoa(item.Id)) {
-				log.Printf("Anilist ID %d (%s) is set to always skip, skipping...\n", item.Id, FullAnimeTitle(item.Title.Romaji, item.Title.English))
+			if slices.Contains(permaSkipAniListIds, strconv.Itoa(item.Id)) {
+				log.Printf("AniList ID %d (%s) is set to always skip, skipping...\n", item.Id, FullAnimeTitle(item.Title.Romaji, item.Title.English))
 				continue
 			}
 			count++
@@ -183,7 +183,7 @@ func getAnilistAnimeSearch(idMap *ConcurrentMap, permaSkipAnilistIds []string, r
 	return respJson, nil
 }
 
-func makeAnilistApiCall(q url.Values) (*AnilistApiResponse, error) {
+func makeAniListApiCall(q url.Values) (*AniListApiResponse, error) {
 	// Build the GraphQL request body
 	variables := BuildGraphQLVariables(q)
 
@@ -203,7 +203,7 @@ func makeAnilistApiCall(q url.Values) (*AnilistApiResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	respData := new(AnilistApiResponse)
+	respData := new(AniListApiResponse)
 	err = json.NewDecoder(resp.Body).Decode(respData)
 	if err != nil {
 		return nil, err

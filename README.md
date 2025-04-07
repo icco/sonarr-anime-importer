@@ -1,13 +1,13 @@
 # sonarr-anime-importer
-Easily create import lists in sonarr with MyAnimeList or Anilist queries!
+Easily create import lists in sonarr with MyAnimeList or AniList queries!
 
-This is basically a wrapper for [Jikan](jikan.moe) and the Anilist API that maps IDs to a list with TVDB IDs so that Sonarr can import the results.
+This is basically a wrapper for [Jikan](jikan.moe) and the AniList API that maps IDs to a list with TVDB IDs so that Sonarr can import the results.
 
 **Until v1.0.0, breaking changes can happen at any time. Multiple have happened already! Be wary updating.**
 
 **The "limit" parameter is required for all requests!**
 
-Pulls MyAnimeList, Anilist, and TVDB ID associations from https://raw.githubusercontent.com/Kometa-Team/Anime-IDs/master/anime_ids.json.
+Pulls MyAnimeList, AniList, and TVDB ID associations from https://raw.githubusercontent.com/Kometa-Team/Anime-IDs/master/anime_ids.json.
 
 ## Supported Requests
 ### GET /v1/mal/anime
@@ -24,7 +24,7 @@ Example request:
 curl "http://localhost:3333/v1/mal/anime?type=tv&status=airing&order_by=popularity&sort=asc&limit=10"
 ```
 ### GET /v1/anilist/anime
-Searches anime from Anilist
+Searches anime from AniList
 
 Parameters:
 - isAdult: Boolean
@@ -58,7 +58,7 @@ curl "http://localhost:3333/v1/anilist/anime?format=TV,ONA&sort=TRENDING_DESC&is
 ## Environment
 One configuration environment variable is supported:
 - `ALWAYS_SKIP_MAL_IDS`: Comma-separated list of MyAnimeList IDs to always skip. These do not count towards the return limit.
-- `ALWAYS_SKIP_ANILIST_IDS`: Comma-separated list of Anilist IDs to always skip. These do not count towards the return limit.
+- `ALWAYS_SKIP_ANILIST_IDS`: Comma-separated list of AniList IDs to always skip. These do not count towards the return limit.
 
 ## Docker Compose
 ```yaml
