@@ -39,7 +39,7 @@ func (m *ConcurrentMap) GetByMalId(i int) int {
 var lastBuiltAnimeIdList time.Time
 
 func main() {
-	log.Println("sonarr-anime-importer v0.2.0")
+	log.Println("sonarr-anime-importer v0.2.1")
 	log.Println("Building Anime ID Associations...")
 	var idMap = new(ConcurrentMap)
 	buildIdMap(idMap)
