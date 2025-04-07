@@ -26,20 +26,14 @@ type AnimeEntry struct {
 	AnilistId int         `json:"anilist_id"`
 }
 type ConcurrentMap struct {
-	mal     map[int]int
-	anilist map[int]int
-	mut     sync.RWMutex
+	mal map[int]int
+	mut sync.RWMutex
 }
 
 func (m *ConcurrentMap) GetByMalId(i int) int {
 	m.mut.RLock()
 	defer m.mut.RUnlock()
 	return m.mal[i]
-}
-func (m *ConcurrentMap) GetByAnilistId(i int) int {
-	m.mut.RLock()
-	defer m.mut.RUnlock()
-	return m.anilist[i]
 }
 
 var lastBuiltAnimeIdList time.Time
@@ -87,7 +81,6 @@ func buildIdMap(idMap *ConcurrentMap) {
 		log.Fatal("Error unmarshalling anime_ids.json: ", err)
 	}
 	idMap.mal = make(map[int]int, 0)
-	idMap.anilist = make(map[int]int, 0)
 	for _, entry := range animeMap {
 		if entry.MalId == nil {
 			continue
@@ -112,7 +105,6 @@ func buildIdMap(idMap *ConcurrentMap) {
 		if entry.AnilistId == 0 {
 			continue
 		}
-		idMap.anilist[entry.AnilistId] = entry.TvdbId
 	}
 	lastBuiltAnimeIdList = time.Now()
 }

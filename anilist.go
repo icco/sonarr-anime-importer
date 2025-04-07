@@ -64,6 +64,7 @@ query (
       isAdult: $isAdult
     ) {
       id
+	  idMal
       title {
         romaji
         english
@@ -78,6 +79,7 @@ type AnilistPageInfo struct {
 }
 type AnilistMediaItem struct {
 	Id    int          `json:"id"`
+	IdMal int          `json:"idMal"`
 	Title AnilistTitle `json:"title"`
 }
 type AnilistTitle struct {
@@ -138,7 +140,7 @@ func getAnilistAnimeSearch(idMap *ConcurrentMap, permaSkipAnilistIds []string, r
 
 		// map the data
 		for _, item := range result.Data.Page.Media {
-			if idMap.GetByAnilistId(item.Id) == 0 {
+			if idMap.GetByMalId(item.IdMal) == 0 {
 				log.Printf("Anilist ID %d (%s) has no associated TVDB ID, skipping...\n", item.Id, FullAnimeTitle(item.Title.Romaji, item.Title.English))
 				continue
 			}
@@ -158,9 +160,9 @@ func getAnilistAnimeSearch(idMap *ConcurrentMap, permaSkipAnilistIds []string, r
 				ResponseItem{
 					item.Title.Romaji,
 					item.Title.English,
-					0,
+					item.IdMal,
 					item.Id,
-					idMap.GetByAnilistId(item.Id),
+					idMap.GetByMalId(item.IdMal),
 				})
 			usedIds[item.Id] = true
 		}
