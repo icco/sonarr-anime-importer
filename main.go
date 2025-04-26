@@ -20,11 +20,13 @@ type ResponseItem struct {
 	AniListId int    `json:"anilistId,omitempty"`
 	TvdbId    int    `json:"tvdbId"`
 }
+
 type AnimeEntry struct {
-	TvdbId    int         `json:"tvdb_id"`
-	MalId     interface{} `json:"mal_id"`
-	AniListId int         `json:"anilist_id"`
+	TvdbId    int `json:"tvdb_id"`
+	MalId     any `json:"mal_id"`
+	AniListId int `json:"anilist_id"`
 }
+
 type ConcurrentMap struct {
 	mal map[int]int
 	mut sync.RWMutex
@@ -38,8 +40,10 @@ func (m *ConcurrentMap) GetByMalId(i int) int {
 
 var lastBuiltAnimeIdList time.Time
 
+const Version = "v0.2.1"
+
 func main() {
-	log.Println("sonarr-anime-importer v0.2.1")
+	log.Printf("sonarr-anime-importer %s", Version)
 	log.Println("Building Anime ID Associations...")
 	var idMap = new(ConcurrentMap)
 	buildIdMap(idMap)
