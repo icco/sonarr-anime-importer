@@ -1,7 +1,7 @@
 # sonarr-anime-importer
 Easily create import lists in sonarr with MyAnimeList or AniList queries!
 
-This is basically a wrapper for [Jikan](jikan.moe) and the AniList API that maps IDs to a list with TVDB IDs so that Sonarr can import the results.
+This is basically a wrapper for [Jikan](https://jikan.moe) and the AniList API that maps IDs to a list with TVDB IDs so that Sonarr can import the results.
 
 **Until v1.0.0, breaking changes can happen at any time. Multiple have happened already! Be wary updating.**
 
