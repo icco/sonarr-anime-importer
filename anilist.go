@@ -187,7 +187,7 @@ func makeAniListApiCall(q url.Values) (*AniListApiResponse, error) {
 	// Build the GraphQL request body
 	variables := BuildGraphQLVariables(q)
 
-	body := map[string]interface{}{
+	body := map[string]any{
 		"query":     anilistQuery,
 		"variables": variables,
 	}
@@ -212,8 +212,8 @@ func makeAniListApiCall(q url.Values) (*AniListApiResponse, error) {
 }
 
 // BuildGraphQLVariables converts URL query parameters into a GraphQL variables map.
-func BuildGraphQLVariables(params url.Values) map[string]interface{} {
-	vars := make(map[string]interface{})
+func BuildGraphQLVariables(params url.Values) map[string]any {
+	vars := make(map[string]any)
 
 	// Helper to convert comma-separated strings into slices
 	parseList := func(key string) []string {
