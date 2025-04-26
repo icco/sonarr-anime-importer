@@ -61,7 +61,14 @@ func main() {
 	http.HandleFunc("/v1/mal/anime", loggerMiddleware(buildIdMapMiddleware(handleMalAnimeSearch(idMap, permaSkipMalIds))))
 	http.HandleFunc("/v1/anilist/anime", loggerMiddleware(buildIdMapMiddleware(handleAniListAnimeSearch(idMap, permaSkipAniListIds))))
 	log.Println("Listening on :3333")
-	log.Fatal(http.ListenAndServe(":3333", nil))
+
+	srv := &http.Server{
+		Addr:         ":3333",
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+	log.Fatal(srv.ListenAndServe())
 }
 
 func buildIdMap(idMap *ConcurrentMap) {
@@ -73,7 +80,11 @@ func buildIdMap(idMap *ConcurrentMap) {
 	if err != nil {
 		log.Fatal("Error fetching anime_ids.json: ", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			log.Printf("Error closing response body: %v", closeErr)
+		}
+	}()
 	idListBytes, err = io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal("Error reading anime_ids.json: ", err)
